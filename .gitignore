@@ -52,3 +52,4 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+/AgroSolutions.Users/.vs/AgroSolutions.Users
