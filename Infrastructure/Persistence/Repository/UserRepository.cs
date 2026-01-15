@@ -1,17 +1,35 @@
 ﻿using Core.Entities;
 using Core.Interfaces.Repositories;
 using Core.ValueObjects;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repository;
 public class UserRepository : IUserRepository
 {
-    public Task AddAsync(User user)
+    protected ApplicationDbContext _context;
+    protected DbSet<User> _dbSet;
+
+    public UserRepository(ApplicationDbContext context)
     {
-        throw new NotImplementedException();
+        _context = context;
+        _dbSet = context.Set<User>();
     }
 
-    public Task<User?> GetByEmailAsync(Email email)
+    public async Task<User> AddAsync(User user)
     {
-        throw new NotImplementedException();
+        user.CreatedAt = DateTime.UtcNow;
+        _dbSet.Add(user);
+
+        if(_context.Database.CurrentTransaction != null)
+        {
+            await _context.SaveChangesAsync();
+        }
+
+        return user;
+    }
+
+    public async Task<User?> GetByEmailAsync(Email email)
+    {
+        return await _dbSet.FirstOrDefaultAsync(u => u.Email == email);
     }
 }
