@@ -17,7 +17,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.Email)
             .HasConversion(email => email.Address, value => new Email(value))
-            .HasColumnType("VARCHAR(254)")
+            .HasColumnType("VARCHAR(255)")
             .IsRequired();
 
         builder.Property(u => u.Password)

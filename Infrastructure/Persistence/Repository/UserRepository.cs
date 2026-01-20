@@ -32,4 +32,15 @@ public class UserRepository : IUserRepository
     {
         return await _dbSet.FirstOrDefaultAsync(u => u.Email == email);
     }
+
+    public async Task<User?> GetByIdAsync(int id)
+    {
+        return await _dbSet.FirstOrDefaultAsync(u => u.Id == id);
+    }
+
+    public async Task UpdateAsync(User user)
+    {
+        _dbSet.Update(user);
+        await _context.SaveChangesAsync();
+    }
 }
