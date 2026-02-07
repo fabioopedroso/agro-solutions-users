@@ -7,6 +7,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/Dotnet.gitignore
 
+# Visual Studio folder
+.vs/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -52,11 +55,3 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
-/AgroSolutions.Users/.vs/AgroSolutions.Users
-AgroSolutions.Users/.vs/ProjectEvaluation/agrosolutions.users.metadata.v9.bin
-AgroSolutions.Users/.vs/ProjectEvaluation/agrosolutions.users.projects.v9.bin
-AgroSolutions.Users/.vs/ProjectEvaluation/agrosolutions.users.projects.v9.bin
-AgroSolutions.Users/.vs/ProjectEvaluation/agrosolutions.users.strings.v9.bin
-AgroSolutions.Users/.vs/ProjectEvaluation/agrosolutions.users.metadata.v9.bin
-AgroSolutions.Users/.vs/ProjectEvaluation/agrosolutions.users.projects.v9.bin
-AgroSolutions.Users/.vs/ProjectEvaluation/agrosolutions.users.strings.v9.bin
