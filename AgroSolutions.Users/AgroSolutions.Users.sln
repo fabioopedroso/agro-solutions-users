@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36518.9 d17.14
+# Visual Studio Version 18
+VisualStudioVersion = 18.2.11415.280 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgroSolutions.Users", "AgroSolutions.Users.csproj", "{BC9B12E8-62E7-409F-B6AD-7A146D58D8FF}"
 EndProject
@@ -10,6 +10,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "..\Core\Core.csproj", "{D5907766-0AD7-4DDD-AB5A-2B9C24ABF850}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure", "..\Infrastructure\Infrastructure.csproj", "{C4625307-21AF-4659-9FF2-C60A76131965}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "..\Tests\Tests.csproj", "{D7DF7159-9C8E-46A2-AFD3-2ED14D6CE11B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{C4625307-21AF-4659-9FF2-C60A76131965}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C4625307-21AF-4659-9FF2-C60A76131965}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C4625307-21AF-4659-9FF2-C60A76131965}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7DF7159-9C8E-46A2-AFD3-2ED14D6CE11B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7DF7159-9C8E-46A2-AFD3-2ED14D6CE11B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7DF7159-9C8E-46A2-AFD3-2ED14D6CE11B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7DF7159-9C8E-46A2-AFD3-2ED14D6CE11B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
