@@ -40,7 +40,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: agrosolutions-secrets
-              key: supabase-users-connection
+              key: supabase-connection-string
         - name: Jwt__Key
           valueFrom:
             secretKeyRef:
