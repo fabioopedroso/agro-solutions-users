@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
       - name: users-api
-        image: seu-dockerhub/agro-users:latest
+        image: fabioopedroso/agro-users:v1
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

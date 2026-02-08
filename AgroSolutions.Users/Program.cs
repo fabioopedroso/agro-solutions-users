@@ -49,6 +49,8 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddHealthChecks();
+
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -102,5 +104,7 @@ app.UseMiddleware<ValidateUserExistsMiddleware>();
 app.UseAuthorization();
 app.UseCustomStatusCodePages();
 app.MapControllers();
+
+app.MapHealthChecks("/health");
 
 app.Run();
