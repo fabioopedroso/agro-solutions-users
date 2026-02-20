@@ -35,12 +35,8 @@ spec:
         - name: datasource-config
           mountPath: /etc/grafana/provisioning/datasources
           readOnly: true
-        - name: dashboard-provisioner
+        - name: grafana-dashboards
           mountPath: /etc/grafana/provisioning/dashboards
-          readOnly: false
-        - name: dashboard-json
-          mountPath: /etc/grafana/provisioning/dashboards/agrosolutions.json
-          subPath: agrosolutions.json
           readOnly: true
         resources:
           requests:
@@ -69,12 +65,9 @@ spec:
       - name: datasource-config
         configMap:
           name: grafana-datasource
-      - name: dashboard-provisioner
+      - name: grafana-dashboards
         configMap:
-          name: grafana-dashboard-provisioner
-      - name: dashboard-json
-        configMap:
-          name: grafana-dashboard-json
+          name: grafana-dashboards
 ---
 apiVersion: v1
 kind: Service
