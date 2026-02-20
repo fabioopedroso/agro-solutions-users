@@ -1,0 +1,198 @@
+{
+  "title": "AgroSolutions - Monitoramento",
+  "uid": "agrosolutions-main",
+  "version": 1,
+  "schemaVersion": 38,
+  "refresh": "10s",
+  "time": { "from": "now-24h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "property",
+        "label": "Propriedade",
+        "type": "query",
+        "datasource": { "type": "postgres", "uid": "agro-postgres" },
+        "query": "SELECT \"Name\" AS __text, \"Id\" AS __value FROM \"Property\" ORDER BY \"Name\"",
+        "refresh": 1,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false
+      },
+      {
+        "name": "field",
+        "label": "Talhao",
+        "type": "query",
+        "datasource": { "type": "postgres", "uid": "agro-postgres" },
+        "query": "SELECT \"Name\" AS __text, \"Id\" AS __value FROM \"Field\" WHERE \"PropertyId\" = '${property}' ORDER BY \"Name\"",
+        "refresh": 2,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Umidade do Solo (%)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "agro-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT \"Timestamp\" AS time, \"Value\" AS \"Umidade (%)\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${field}' AND \"SensorType\" = 'SoilHumidity' AND \"Timestamp\" >= $__timeFrom() AND \"Timestamp\" <= $__timeTo() ORDER BY \"Timestamp\"",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 30 },
+              { "color": "green", "value": 50 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Temperatura (°C)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "agro-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT \"Timestamp\" AS time, \"Value\" AS \"Temperatura (°C)\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${field}' AND \"SensorType\" = 'Temperature' AND \"Timestamp\" >= $__timeFrom() AND \"Timestamp\" <= $__timeTo() ORDER BY \"Timestamp\"",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 2 },
+              { "color": "yellow", "value": 25 },
+              { "color": "orange", "value": 32 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Precipitacao (mm/h)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "agro-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT \"Timestamp\" AS time, \"Value\" AS \"Precipitacao (mm/h)\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${field}' AND \"SensorType\" = 'Rainfall' AND \"Timestamp\" >= $__timeFrom() AND \"Timestamp\" <= $__timeTo() ORDER BY \"Timestamp\"",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lengthmm",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 20 },
+              { "color": "red", "value": 50 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Status do Talhao",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 8, "w": 6, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "agro-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT CASE WHEN EXISTS (SELECT 1 FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active' AND \"Type\" IN ('DROUGHT_CRITICAL','FROST_RISK')) THEN 'Critico' WHEN EXISTS (SELECT 1 FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active' AND \"Type\" = 'DROUGHT_WARNING') THEN 'Alerta de Seca' WHEN EXISTS (SELECT 1 FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active') THEN 'Em Alerta' ELSE 'Normal' END AS \"Status\"",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value",
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "Normal":         { "color": "green",  "index": 0 } } },
+            { "type": "value", "options": { "Em Alerta":      { "color": "yellow", "index": 1 } } },
+            { "type": "value", "options": { "Alerta de Seca": { "color": "orange", "index": 2 } } },
+            { "type": "value", "options": { "Critico":        { "color": "red",    "index": 3 } } }
+          ]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Total de Alertas Ativos",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 8, "w": 6, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "agro-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*) AS \"Alertas Ativos\" FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 3 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Alertas Ativos",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "agro-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT CASE \"Type\" WHEN 'DROUGHT_WARNING' THEN 'Alerta de Seca' WHEN 'DROUGHT_CRITICAL' THEN 'Seca Critica' WHEN 'SATURATION' THEN 'Solo Saturado' WHEN 'FROST_RISK' THEN 'Risco de Geada' WHEN 'HEAT_STRESS' THEN 'Estresse Termico' WHEN 'HEAVY_RAIN' THEN 'Chuva Intensa' END AS \"Tipo\", \"Severity\" AS \"Severidade\", \"Message\" AS \"Mensagem\", \"TriggerValue\" AS \"Valor Gatilho\", \"CreatedAt\" AS \"Detectado em\" FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active' ORDER BY \"CreatedAt\" DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": [{ "displayName": "Detectado em", "desc": true }]
+      }
+    }
+  ]
+}
