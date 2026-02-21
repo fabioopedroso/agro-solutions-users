@@ -23,6 +23,11 @@ spec:
         ports:
         - containerPort: 3000
         env:
+        - name: SUPABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: agrosolutions-secrets
+              key: supabase-password
         - name: GF_SECURITY_ADMIN_USER
           value: "admin"
         - name: GF_SECURITY_ADMIN_PASSWORD

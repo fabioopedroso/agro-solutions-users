@@ -16,7 +16,7 @@ data:
         url: aws-1-us-east-2.pooler.supabase.com:5432
         user: postgres.ktqqesmnkvihddhkykyh
         secureJsonData:
-          password: "$3)S.bpDb?4Xm6?"
+          password: ${SUPABASE_PASSWORD}
         jsonData:
           database: postgres
           sslmode: require
@@ -92,8 +92,10 @@ data:
           "datasource": { "type": "postgres", "uid": "agro-postgres" },
           "targets": [
             {
-              "rawSql": "SELECT \"Timestamp\" AS time, \"Value\" AS \"Umidade (%)\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${field}' AND \"SensorType\" = 'SoilHumidity' AND \"Timestamp\" >= $__timeFrom() AND \"Timestamp\" <= $__timeTo() ORDER BY \"Timestamp\"",
+              "rawSql": "SELECT \"Timestamp\" AS time, \"Value\" AS \"Umidade (%)\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${field}' AND \"SensorType\" = 'SoilHumidity' AND $__timeFilter(\"Timestamp\") ORDER BY \"Timestamp\"",
               "format": "time_series",
+              "rawQuery": true,
+              "editorMode": "code",
               "refId": "A"
             }
           ],
@@ -123,8 +125,10 @@ data:
           "datasource": { "type": "postgres", "uid": "agro-postgres" },
           "targets": [
             {
-              "rawSql": "SELECT \"Timestamp\" AS time, \"Value\" AS \"Temperatura (°C)\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${field}' AND \"SensorType\" = 'Temperature' AND \"Timestamp\" >= $__timeFrom() AND \"Timestamp\" <= $__timeTo() ORDER BY \"Timestamp\"",
+              "rawSql": "SELECT \"Timestamp\" AS time, \"Value\" AS \"Temperatura (°C)\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${field}' AND \"SensorType\" = 'Temperature' AND $__timeFilter(\"Timestamp\") ORDER BY \"Timestamp\"",
               "format": "time_series",
+              "rawQuery": true,
+              "editorMode": "code",
               "refId": "A"
             }
           ],
@@ -151,8 +155,10 @@ data:
           "datasource": { "type": "postgres", "uid": "agro-postgres" },
           "targets": [
             {
-              "rawSql": "SELECT \"Timestamp\" AS time, \"Value\" AS \"Precipitacao (mm/h)\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${field}' AND \"SensorType\" = 'Rainfall' AND \"Timestamp\" >= $__timeFrom() AND \"Timestamp\" <= $__timeTo() ORDER BY \"Timestamp\"",
+              "rawSql": "SELECT \"Timestamp\" AS time, \"Value\" AS \"Precipitacao (mm/h)\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${field}' AND \"SensorType\" = 'Rainfall' AND $__timeFilter(\"Timestamp\") ORDER BY \"Timestamp\"",
               "format": "time_series",
+              "rawQuery": true,
+              "editorMode": "code",
               "refId": "A"
             }
           ],
@@ -180,11 +186,13 @@ data:
             {
               "rawSql": "SELECT CASE WHEN EXISTS (SELECT 1 FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active' AND \"Type\" IN ('DROUGHT_CRITICAL','FROST_RISK')) THEN 'Critico' WHEN EXISTS (SELECT 1 FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active' AND \"Type\" = 'DROUGHT_WARNING') THEN 'Alerta de Seca' WHEN EXISTS (SELECT 1 FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active') THEN 'Em Alerta' ELSE 'Normal' END AS \"Status\"",
               "format": "table",
+              "rawQuery": true,
+              "editorMode": "code",
               "refId": "A"
             }
           ],
           "options": {
-            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "Status" },
             "textMode": "value",
             "colorMode": "background"
           },
@@ -209,6 +217,8 @@ data:
             {
               "rawSql": "SELECT COUNT(*) AS \"Alertas Ativos\" FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active'",
               "format": "table",
+              "rawQuery": true,
+              "editorMode": "code",
               "refId": "A"
             }
           ],
@@ -239,6 +249,8 @@ data:
             {
               "rawSql": "SELECT CASE \"Type\" WHEN 'DROUGHT_WARNING' THEN 'Alerta de Seca' WHEN 'DROUGHT_CRITICAL' THEN 'Seca Critica' WHEN 'SATURATION' THEN 'Solo Saturado' WHEN 'FROST_RISK' THEN 'Risco de Geada' WHEN 'HEAT_STRESS' THEN 'Estresse Termico' WHEN 'HEAVY_RAIN' THEN 'Chuva Intensa' END AS \"Tipo\", \"Severity\" AS \"Severidade\", \"Message\" AS \"Mensagem\", \"TriggerValue\" AS \"Valor Gatilho\", \"CreatedAt\" AS \"Detectado em\" FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active' ORDER BY \"CreatedAt\" DESC",
               "format": "table",
+              "rawQuery": true,
+              "editorMode": "code",
               "refId": "A"
             }
           ],
