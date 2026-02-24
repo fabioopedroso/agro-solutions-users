@@ -12,7 +12,82 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Resources;
+using Npgsql;
+
 var builder = WebApplication.CreateBuilder(args);
+
+var serviceName = builder.Configuration["Observability:ServiceName"] ?? "AgroSolutions.Users";
+var otlpEndpoint = builder.Configuration["Observability:OtlpEndpoint"];
+
+var resourceBuilder = ResourceBuilder.CreateDefault()
+    .AddService(serviceName)
+    .AddTelemetrySdk()
+    .AddEnvironmentVariableDetector();
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddOpenTelemetry(logging =>
+{
+    logging.IncludeFormattedMessage = true;
+    logging.IncludeScopes = true;
+    logging.SetResourceBuilder(resourceBuilder);
+
+    if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+    {
+        logging.AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri(otlpEndpoint);
+        });
+    }
+});
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing =>
+    {
+        tracing.SetResourceBuilder(resourceBuilder)
+            .AddAspNetCoreInstrumentation(options =>
+            {
+                options.Filter = context => !context.Request.Path.Value!.Contains("/health");
+            })
+            .AddHttpClientInstrumentation()
+            .AddEntityFrameworkCoreInstrumentation(options =>
+            {
+                options.EnrichWithIDbCommand = (activity, command) =>
+                {
+                    activity.SetTag("db.statement", command.CommandText);
+                };
+            })
+            .AddNpgsql();
+
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+        {
+            tracing.AddOtlpExporter(options =>
+            {
+                options.Endpoint = new Uri(otlpEndpoint);
+            });
+        }
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics.SetResourceBuilder(resourceBuilder)
+            .AddRuntimeInstrumentation()
+            .AddProcessInstrumentation()
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddMeter("Npgsql");
+
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+        {
+            metrics.AddOtlpExporter(options =>
+            {
+                options.Endpoint = new Uri(otlpEndpoint);
+            });
+        }
+    });
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("ConnectionString")));

@@ -55,3 +55,7 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+/AgroSolutions.Users/.vs/ProjectEvaluation/agrosolutions.users.metadata.v9.bin
+/AgroSolutions.Users/.vs/ProjectEvaluation/agrosolutions.users.projects.v9.bin
+/AgroSolutions.Users/.vs/ProjectEvaluation/agrosolutions.users.strings.v9.bin
+/k8s/infra/secrets.yaml

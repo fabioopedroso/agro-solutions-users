@@ -1,4 +1,6 @@
 using Application.Exceptions;
+using OpenTelemetry.Trace;
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace AgroSolutions.Users.Middlewares;
@@ -24,6 +26,13 @@ public class ExceptionHandlingMiddleware
         {
             LogException(ex);
             await WriteProblemResponseAsync(context, ex);
+
+            var activity = Activity.Current;
+            if (activity != null)
+            {
+                activity.SetStatus(ActivityStatusCode.Error, ex.Message);
+                activity.AddException(ex);
+            }
         }
     }
 

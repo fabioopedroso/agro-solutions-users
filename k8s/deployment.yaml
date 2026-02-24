@@ -36,6 +36,8 @@ spec:
         - configMapRef:
             name: users-config
         env:
+        - name: Observability__OtlpEndpoint
+          value: "http://otel-collector:4317"
         - name: ConnectionStrings__ConnectionString
           valueFrom:
             secretKeyRef:
