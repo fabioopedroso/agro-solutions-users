@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
       - name: users-api
-        image: fabioopedroso/agro-users:v2
+        image: fabioopedroso/agro-users:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
