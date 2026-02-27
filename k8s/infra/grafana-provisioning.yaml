@@ -16,7 +16,7 @@ data:
         url: aws-1-us-east-2.pooler.supabase.com:5432
         user: postgres.ktqqesmnkvihddhkykyh
         secureJsonData:
-          password: ${SUPABASE_PASSWORD}
+          password: $__env{SUPABASE_PASSWORD}
         jsonData:
           database: postgres
           sslmode: require
@@ -26,7 +26,7 @@ data:
           postgresVersion: 1500
           timescaledb: false
         isDefault: true
-        editable: false
+        editable: true
       - name: Prometheus
         type: prometheus
         uid: agro-prometheus
