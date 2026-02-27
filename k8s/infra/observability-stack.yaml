@@ -137,6 +137,8 @@ data:
     exporters:
       prometheus:
         endpoint: "0.0.0.0:8889"
+        resource_to_telemetry_conversion:
+          enabled: true
       otlp:
         endpoint: "jaeger:4317"
         tls:
@@ -145,7 +147,13 @@ data:
         endpoint: "http://loki:3100/loki/api/v1/push"
         default_labels_enabled:
           exporter: false
-          job: true
+          job: false
+    processors:
+      resource/loki:
+        attributes:
+          - action: insert
+            key: loki.resource.labels
+            value: "service.name"
     service:
       pipelines:
         traces:
@@ -156,6 +164,7 @@ data:
           exporters: [prometheus]
         logs:
           receivers: [otlp]
+          processors: [resource/loki]
           exporters: [loki]
 ---
 apiVersion: apps/v1

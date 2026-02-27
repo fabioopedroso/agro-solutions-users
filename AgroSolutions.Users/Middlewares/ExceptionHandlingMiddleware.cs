@@ -25,7 +25,6 @@ public class ExceptionHandlingMiddleware
         catch (Exception ex)
         {
             LogException(ex);
-            await WriteProblemResponseAsync(context, ex);
 
             var activity = Activity.Current;
             if (activity != null)
@@ -33,6 +32,8 @@ public class ExceptionHandlingMiddleware
                 activity.SetStatus(ActivityStatusCode.Error, ex.Message);
                 activity.AddException(ex);
             }
+
+            await WriteProblemResponseAsync(context, ex);
         }
     }
 
@@ -68,7 +69,7 @@ public class ExceptionHandlingMiddleware
         title = GetTitleForStatusCode(statusCode),
         status = statusCode,
         detail = exception.Message,
-        instance = context.Request.Path
+        instance = context.Request.Path.Value
     };
 
     private string GetTitleForStatusCode(int statusCode) => statusCode switch

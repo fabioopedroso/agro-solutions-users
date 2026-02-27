@@ -346,21 +346,21 @@ data:
           "id": 6, "title": "Memoria do Processo (MB)",
           "type": "timeseries", "gridPos": { "x": 0, "y": 10, "w": 6, "h": 8 },
           "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
-          "targets": [{ "expr": "process_working_set_bytes{service_name=\"$service\"} / 1024 / 1024", "legendFormat": "Working Set", "refId": "A" }],
+          "targets": [{ "expr": "process_memory_usage_bytes{service_name=\"$service\"} / 1024 / 1024", "legendFormat": "Working Set", "refId": "A" }],
           "fieldConfig": { "defaults": { "unit": "decmbytes" } }
         },
         {
           "id": 7, "title": "CPU (%)",
           "type": "timeseries", "gridPos": { "x": 6, "y": 10, "w": 6, "h": 8 },
           "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
-          "targets": [{ "expr": "rate(process_cpu_seconds_total{service_name=\"$service\"}[1m]) * 100", "legendFormat": "CPU", "refId": "A" }],
+          "targets": [{ "expr": "rate(process_cpu_time_seconds_total{service_name=\"$service\"}[1m]) * 100", "legendFormat": "CPU", "refId": "A" }],
           "fieldConfig": { "defaults": { "unit": "percent" } }
         },
         {
           "id": 8, "title": "Heap .NET (MB)",
           "type": "timeseries", "gridPos": { "x": 12, "y": 10, "w": 6, "h": 8 },
           "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
-          "targets": [{ "expr": "dotnet_gc_heap_size_bytes{service_name=\"$service\"} / 1024 / 1024", "legendFormat": "gen{{generation}}", "refId": "A" }],
+          "targets": [{ "expr": "process_runtime_dotnet_gc_heap_size_bytes{service_name=\"$service\"} / 1024 / 1024", "legendFormat": "{{generation}}", "refId": "A" }],
           "fieldConfig": { "defaults": { "unit": "decmbytes" } }
         },
         {
@@ -368,8 +368,8 @@ data:
           "type": "timeseries", "gridPos": { "x": 18, "y": 10, "w": 6, "h": 8 },
           "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
           "targets": [
-            { "expr": "rate(dotnet_gc_collections_count_total{service_name=\"$service\"}[1m])", "legendFormat": "GC gen{{gc_generation}}", "refId": "A" },
-            { "expr": "dotnet_thread_pool_threads_count{service_name=\"$service\"}", "legendFormat": "Threads", "refId": "B" }
+            { "expr": "rate(process_runtime_dotnet_gc_collections_count_total{service_name=\"$service\"}[1m])", "legendFormat": "GC {{generation}}", "refId": "A" },
+            { "expr": "process_runtime_dotnet_thread_pool_threads_count{service_name=\"$service\"}", "legendFormat": "Threads", "refId": "B" }
           ],
           "fieldConfig": { "defaults": { "unit": "short" } }
         },
@@ -390,33 +390,11 @@ data:
         },
         {
           "id": 13, "title": "Traces",
-          "type": "traces", "gridPos": { "x": 0, "y": 32, "w": 24, "h": 10 },
+          "type": "table", "gridPos": { "x": 0, "y": 32, "w": 24, "h": 10 },
           "datasource": { "type": "jaeger", "uid": "agro-jaeger" },
-          "targets": [{ "queryType": "search", "service": "$service", "refId": "A" }]
+          "targets": [{ "queryType": "search", "service": "$service", "limit": 20, "refId": "A" }],
+          "options": { "sortBy": [{ "displayName": "Start time", "desc": true }] },
+          "transformations": [{ "id": "organize", "options": { "excludeByName": {}, "renameByName": { "traceID": "Trace ID", "traceName": "Operacao", "startTime": "Inicio", "duration": "Duracao (ms)" } } }]
         }
       ]
     }
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana-datasources
-  namespace: agrosolutions
-data:
-  datasources.yaml: |
-    apiVersion: 1
-    datasources:
-    - name: Prometheus
-      type: prometheus
-      uid: agro-prometheus
-      access: proxy
-      url: http://prometheus:9090
-      isDefault: false
-      editable: true
-    - name: Jaeger
-      type: jaeger
-      uid: agro-jaeger
-      access: proxy
-      url: http://jaeger:16686
-      isDefault: false
-      editable: true
