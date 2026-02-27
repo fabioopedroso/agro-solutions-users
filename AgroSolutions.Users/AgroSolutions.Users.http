@@ -1,0 +1,32 @@
+@AgroSolutions.Users_HostAddress = http://localhost:5171
+@token = seu-token-aqui
+
+### Registrar novo usuário
+POST {{AgroSolutions.Users_HostAddress}}/api/users/register
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "password": "SenhaForte123!"
+}
+
+### Login - Obter token JWT
+POST {{AgroSolutions.Users_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "password": "SenhaForte123!"
+}
+
+### Alterar senha (requer autenticação)
+PUT {{AgroSolutions.Users_HostAddress}}/api/users/change-password
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "password": "SenhaForte123!",
+  "newPassword": "NovaSenhaForte456!"
+}
+
+###

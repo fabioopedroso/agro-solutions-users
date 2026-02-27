@@ -1,0 +1,400 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasource
+  namespace: agrosolutions
+  labels:
+    app: grafana
+    component: monitoring
+data:
+  datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: AgroSolutions-PostgreSQL
+        type: postgres
+        uid: agro-postgres
+        url: aws-1-us-east-2.pooler.supabase.com:5432
+        user: postgres.ktqqesmnkvihddhkykyh
+        secureJsonData:
+          password: $__env{SUPABASE_PASSWORD}
+        jsonData:
+          database: postgres
+          sslmode: require
+          maxOpenConns: 5
+          maxIdleConns: 2
+          connMaxLifetime: 14400
+          postgresVersion: 1500
+          timescaledb: false
+        isDefault: true
+        editable: true
+      - name: Prometheus
+        type: prometheus
+        uid: agro-prometheus
+        url: http://prometheus:9090
+        access: proxy
+        isDefault: false
+        editable: true
+      - name: Jaeger
+        type: jaeger
+        uid: agro-jaeger
+        url: http://jaeger:16686
+        access: proxy
+        isDefault: false
+        editable: true
+      - name: Loki
+        type: loki
+        uid: agro-loki
+        url: http://loki:3100
+        access: proxy
+        isDefault: false
+        editable: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: agrosolutions
+  labels:
+    app: grafana
+    component: monitoring
+data:
+  dashboard.yaml: |
+    apiVersion: 1
+    providers:
+      - name: AgroSolutions
+        orgId: 1
+        folder: AgroSolutions
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        allowUiUpdates: true
+        options:
+          path: /etc/grafana/provisioning/dashboards
+  agrosolutions.json: |
+    {
+      "title": "AgroSolutions - Monitoramento",
+      "uid": "agrosolutions-main",
+      "version": 1,
+      "schemaVersion": 38,
+      "refresh": "10s",
+      "time": { "from": "now-24h", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "property",
+            "label": "Propriedade",
+            "type": "query",
+            "datasource": { "type": "postgres", "uid": "agro-postgres" },
+            "query": "SELECT \"Name\" AS __text, \"Id\" AS __value FROM \"Property\" ORDER BY \"Name\"",
+            "refresh": 1,
+            "sort": 1,
+            "multi": false,
+            "includeAll": false
+          },
+          {
+            "name": "field",
+            "label": "Talhao",
+            "type": "query",
+            "datasource": { "type": "postgres", "uid": "agro-postgres" },
+            "query": "SELECT \"Name\" AS __text, \"Id\" AS __value FROM \"Field\" WHERE \"PropertyId\" = '${property}' ORDER BY \"Name\"",
+            "refresh": 2,
+            "sort": 1,
+            "multi": false,
+            "includeAll": false
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Umidade do Solo (%)",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+          "datasource": { "type": "postgres", "uid": "agro-postgres" },
+          "targets": [
+            {
+              "rawSql": "SELECT \"Timestamp\" AS time, \"Value\" AS \"Umidade (%)\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${field}' AND \"SensorType\" = 'SoilHumidity' AND $__timeFilter(\"Timestamp\") ORDER BY \"Timestamp\"",
+              "format": "time_series",
+              "rawQuery": true,
+              "editorMode": "code",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "yellow", "value": 30 },
+                  { "color": "green", "value": 50 }
+                ]
+              }
+            }
+          },
+          "options": {
+            "tooltip": { "mode": "single" },
+            "legend": { "displayMode": "list", "placement": "bottom" }
+          }
+        },
+        {
+          "id": 2,
+          "title": "Temperatura (°C)",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+          "datasource": { "type": "postgres", "uid": "agro-postgres" },
+          "targets": [
+            {
+              "rawSql": "SELECT \"Timestamp\" AS time, \"Value\" AS \"Temperatura (°C)\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${field}' AND \"SensorType\" = 'Temperature' AND $__timeFilter(\"Timestamp\") ORDER BY \"Timestamp\"",
+              "format": "time_series",
+              "rawQuery": true,
+              "editorMode": "code",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "celsius",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "blue", "value": null },
+                  { "color": "green", "value": 2 },
+                  { "color": "yellow", "value": 25 },
+                  { "color": "orange", "value": 32 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 3,
+          "title": "Precipitacao (mm/h)",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+          "datasource": { "type": "postgres", "uid": "agro-postgres" },
+          "targets": [
+            {
+              "rawSql": "SELECT \"Timestamp\" AS time, \"Value\" AS \"Precipitacao (mm/h)\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${field}' AND \"SensorType\" = 'Rainfall' AND $__timeFilter(\"Timestamp\") ORDER BY \"Timestamp\"",
+              "format": "time_series",
+              "rawQuery": true,
+              "editorMode": "code",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "lengthmm",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 20 },
+                  { "color": "red", "value": 50 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 4,
+          "title": "Status do Talhao",
+          "type": "stat",
+          "gridPos": { "x": 12, "y": 8, "w": 6, "h": 8 },
+          "datasource": { "type": "postgres", "uid": "agro-postgres" },
+          "targets": [
+            {
+              "rawSql": "SELECT CASE WHEN EXISTS (SELECT 1 FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active' AND \"Type\" IN ('DROUGHT_CRITICAL','FROST_RISK')) THEN 'Critico' WHEN EXISTS (SELECT 1 FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active' AND \"Type\" = 'DROUGHT_WARNING') THEN 'Alerta de Seca' WHEN EXISTS (SELECT 1 FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active') THEN 'Em Alerta' ELSE 'Normal' END AS \"Status\"",
+              "format": "table",
+              "rawQuery": true,
+              "editorMode": "code",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "Status" },
+            "textMode": "value",
+            "colorMode": "background"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "type": "value", "options": { "Normal":       { "color": "green",  "index": 0 } } },
+                { "type": "value", "options": { "Em Alerta":    { "color": "yellow", "index": 1 } } },
+                { "type": "value", "options": { "Alerta de Seca": { "color": "orange","index": 2 } } },
+                { "type": "value", "options": { "Critico":      { "color": "red",    "index": 3 } } }
+              ]
+            }
+          }
+        },
+        {
+          "id": 5,
+          "title": "Total de Alertas Ativos",
+          "type": "stat",
+          "gridPos": { "x": 18, "y": 8, "w": 6, "h": 8 },
+          "datasource": { "type": "postgres", "uid": "agro-postgres" },
+          "targets": [
+            {
+              "rawSql": "SELECT COUNT(*) AS \"Alertas Ativos\" FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active'",
+              "format": "table",
+              "rawQuery": true,
+              "editorMode": "code",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 1 },
+                  { "color": "red", "value": 3 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 6,
+          "title": "Alertas Ativos",
+          "type": "table",
+          "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
+          "datasource": { "type": "postgres", "uid": "agro-postgres" },
+          "targets": [
+            {
+              "rawSql": "SELECT CASE \"Type\" WHEN 'DROUGHT_WARNING' THEN 'Alerta de Seca' WHEN 'DROUGHT_CRITICAL' THEN 'Seca Critica' WHEN 'SATURATION' THEN 'Solo Saturado' WHEN 'FROST_RISK' THEN 'Risco de Geada' WHEN 'HEAT_STRESS' THEN 'Estresse Termico' WHEN 'HEAVY_RAIN' THEN 'Chuva Intensa' END AS \"Tipo\", \"Severity\" AS \"Severidade\", \"Message\" AS \"Mensagem\", \"TriggerValue\" AS \"Valor Gatilho\", \"CreatedAt\" AS \"Detectado em\" FROM \"Alerts\" WHERE \"FieldId\" = '${field}' AND \"Status\" = 'Active' ORDER BY \"CreatedAt\" DESC",
+              "format": "table",
+              "rawQuery": true,
+              "editorMode": "code",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "sortBy": [{ "displayName": "Detectado em", "desc": true }]
+          }
+        }
+      ]
+    }
+  observability.json: |
+    {
+      "title": "AgroSolutions - Observability",
+      "uid": "agrosolutions-otel",
+      "version": 3,
+      "schemaVersion": 38,
+      "refresh": "15s",
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "service",
+            "label": "Servico",
+            "type": "custom",
+            "query": "AgroSolutions.Users,AgroSolutions.Sensor.Ingestion,AgroSolutions.Sensor.Simulator,AgroSolutions.Properties.Fields,AgroSolutions.Analysis.Alerts",
+            "current": { "text": "AgroSolutions.Users", "value": "AgroSolutions.Users" },
+            "options": [
+              { "text": "AgroSolutions.Users", "value": "AgroSolutions.Users" },
+              { "text": "AgroSolutions.Sensor.Ingestion", "value": "AgroSolutions.Sensor.Ingestion" },
+              { "text": "AgroSolutions.Sensor.Simulator", "value": "AgroSolutions.Sensor.Simulator" },
+              { "text": "AgroSolutions.Properties.Fields", "value": "AgroSolutions.Properties.Fields" },
+              { "text": "AgroSolutions.Analysis.Alerts", "value": "AgroSolutions.Analysis.Alerts" }
+            ],
+            "multi": false,
+            "includeAll": false
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1, "type": "row", "title": "Metricas HTTP - $service",
+          "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }, "collapsed": false
+        },
+        {
+          "id": 2, "title": "Taxa de Requisicoes (req/s)",
+          "type": "timeseries", "gridPos": { "x": 0, "y": 1, "w": 8, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [{ "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"$service\"}[1m])) by (http_route)", "legendFormat": "{{http_route}}", "refId": "A" }],
+          "fieldConfig": { "defaults": { "unit": "reqps" } }
+        },
+        {
+          "id": 3, "title": "Latencia p99 / p50 (ms)",
+          "type": "timeseries", "gridPos": { "x": 8, "y": 1, "w": 8, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [
+            { "expr": "histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket{service_name=\"$service\"}[5m])) by (le)) * 1000", "legendFormat": "p99", "refId": "A" },
+            { "expr": "histogram_quantile(0.50, sum(rate(http_server_request_duration_seconds_bucket{service_name=\"$service\"}[5m])) by (le)) * 1000", "legendFormat": "p50", "refId": "B" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "ms" } }
+        },
+        {
+          "id": 4, "title": "Status HTTP",
+          "type": "timeseries", "gridPos": { "x": 16, "y": 1, "w": 8, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [{ "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"$service\"}[1m])) by (http_response_status_code)", "legendFormat": "{{http_response_status_code}}", "refId": "A" }],
+          "fieldConfig": { "defaults": { "unit": "reqps" } }
+        },
+        {
+          "id": 5, "type": "row", "title": "Runtime .NET - $service",
+          "gridPos": { "x": 0, "y": 9, "w": 24, "h": 1 }, "collapsed": false
+        },
+        {
+          "id": 6, "title": "Memoria do Processo (MB)",
+          "type": "timeseries", "gridPos": { "x": 0, "y": 10, "w": 6, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [{ "expr": "process_memory_usage_bytes{service_name=\"$service\"} / 1024 / 1024", "legendFormat": "Working Set", "refId": "A" }],
+          "fieldConfig": { "defaults": { "unit": "decmbytes" } }
+        },
+        {
+          "id": 7, "title": "CPU (%)",
+          "type": "timeseries", "gridPos": { "x": 6, "y": 10, "w": 6, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [{ "expr": "rate(process_cpu_time_seconds_total{service_name=\"$service\"}[1m]) * 100", "legendFormat": "CPU", "refId": "A" }],
+          "fieldConfig": { "defaults": { "unit": "percent" } }
+        },
+        {
+          "id": 8, "title": "Heap .NET (MB)",
+          "type": "timeseries", "gridPos": { "x": 12, "y": 10, "w": 6, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [{ "expr": "process_runtime_dotnet_gc_heap_size_bytes{service_name=\"$service\"} / 1024 / 1024", "legendFormat": "{{generation}}", "refId": "A" }],
+          "fieldConfig": { "defaults": { "unit": "decmbytes" } }
+        },
+        {
+          "id": 9, "title": "GC Collections / Threads",
+          "type": "timeseries", "gridPos": { "x": 18, "y": 10, "w": 6, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [
+            { "expr": "rate(process_runtime_dotnet_gc_collections_count_total{service_name=\"$service\"}[1m])", "legendFormat": "GC {{generation}}", "refId": "A" },
+            { "expr": "process_runtime_dotnet_thread_pool_threads_count{service_name=\"$service\"}", "legendFormat": "Threads", "refId": "B" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "short" } }
+        },
+        {
+          "id": 10, "type": "row", "title": "Logs - $service",
+          "gridPos": { "x": 0, "y": 18, "w": 24, "h": 1 }, "collapsed": false
+        },
+        {
+          "id": 11, "title": "Logs",
+          "type": "logs", "gridPos": { "x": 0, "y": 19, "w": 24, "h": 12 },
+          "datasource": { "type": "loki", "uid": "agro-loki" },
+          "targets": [{ "expr": "{service_name=\"$service\"}", "refId": "A" }],
+          "options": { "showTime": true, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true }
+        },
+        {
+          "id": 12, "type": "row", "title": "Traces - $service",
+          "gridPos": { "x": 0, "y": 31, "w": 24, "h": 1 }, "collapsed": false
+        },
+        {
+          "id": 13, "title": "Traces",
+          "type": "table", "gridPos": { "x": 0, "y": 32, "w": 24, "h": 10 },
+          "datasource": { "type": "jaeger", "uid": "agro-jaeger" },
+          "targets": [{ "queryType": "search", "service": "$service", "limit": 20, "refId": "A" }],
+          "options": { "sortBy": [{ "displayName": "Start time", "desc": true }] },
+          "transformations": [{ "id": "organize", "options": { "excludeByName": {}, "renameByName": { "traceID": "Trace ID", "traceName": "Operacao", "startTime": "Inicio", "duration": "Duracao (ms)" } } }]
+        }
+      ]
+    }
