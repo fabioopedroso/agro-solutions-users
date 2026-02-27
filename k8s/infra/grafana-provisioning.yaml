@@ -26,6 +26,27 @@ data:
           postgresVersion: 1500
           timescaledb: false
         isDefault: true
+        editable: false
+      - name: Prometheus
+        type: prometheus
+        uid: agro-prometheus
+        url: http://prometheus:9090
+        access: proxy
+        isDefault: false
+        editable: true
+      - name: Jaeger
+        type: jaeger
+        uid: agro-jaeger
+        url: http://jaeger:16686
+        access: proxy
+        isDefault: false
+        editable: true
+      - name: Loki
+        type: loki
+        uid: agro-loki
+        url: http://loki:3100
+        access: proxy
+        isDefault: false
         editable: true
 ---
 apiVersion: v1
@@ -260,23 +281,141 @@ data:
         }
       ]
     }
+  observability.json: |
+    {
+      "title": "AgroSolutions - Observability",
+      "uid": "agrosolutions-otel",
+      "version": 3,
+      "schemaVersion": 38,
+      "refresh": "15s",
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "service",
+            "label": "Servico",
+            "type": "custom",
+            "query": "AgroSolutions.Users,AgroSolutions.Sensor.Ingestion,AgroSolutions.Sensor.Simulator,AgroSolutions.Properties.Fields,AgroSolutions.Analysis.Alerts",
+            "current": { "text": "AgroSolutions.Users", "value": "AgroSolutions.Users" },
+            "options": [
+              { "text": "AgroSolutions.Users", "value": "AgroSolutions.Users" },
+              { "text": "AgroSolutions.Sensor.Ingestion", "value": "AgroSolutions.Sensor.Ingestion" },
+              { "text": "AgroSolutions.Sensor.Simulator", "value": "AgroSolutions.Sensor.Simulator" },
+              { "text": "AgroSolutions.Properties.Fields", "value": "AgroSolutions.Properties.Fields" },
+              { "text": "AgroSolutions.Analysis.Alerts", "value": "AgroSolutions.Analysis.Alerts" }
+            ],
+            "multi": false,
+            "includeAll": false
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1, "type": "row", "title": "Metricas HTTP - $service",
+          "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }, "collapsed": false
+        },
+        {
+          "id": 2, "title": "Taxa de Requisicoes (req/s)",
+          "type": "timeseries", "gridPos": { "x": 0, "y": 1, "w": 8, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [{ "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"$service\"}[1m])) by (http_route)", "legendFormat": "{{http_route}}", "refId": "A" }],
+          "fieldConfig": { "defaults": { "unit": "reqps" } }
+        },
+        {
+          "id": 3, "title": "Latencia p99 / p50 (ms)",
+          "type": "timeseries", "gridPos": { "x": 8, "y": 1, "w": 8, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [
+            { "expr": "histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket{service_name=\"$service\"}[5m])) by (le)) * 1000", "legendFormat": "p99", "refId": "A" },
+            { "expr": "histogram_quantile(0.50, sum(rate(http_server_request_duration_seconds_bucket{service_name=\"$service\"}[5m])) by (le)) * 1000", "legendFormat": "p50", "refId": "B" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "ms" } }
+        },
+        {
+          "id": 4, "title": "Status HTTP",
+          "type": "timeseries", "gridPos": { "x": 16, "y": 1, "w": 8, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [{ "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"$service\"}[1m])) by (http_response_status_code)", "legendFormat": "{{http_response_status_code}}", "refId": "A" }],
+          "fieldConfig": { "defaults": { "unit": "reqps" } }
+        },
+        {
+          "id": 5, "type": "row", "title": "Runtime .NET - $service",
+          "gridPos": { "x": 0, "y": 9, "w": 24, "h": 1 }, "collapsed": false
+        },
+        {
+          "id": 6, "title": "Memoria do Processo (MB)",
+          "type": "timeseries", "gridPos": { "x": 0, "y": 10, "w": 6, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [{ "expr": "process_working_set_bytes{service_name=\"$service\"} / 1024 / 1024", "legendFormat": "Working Set", "refId": "A" }],
+          "fieldConfig": { "defaults": { "unit": "decmbytes" } }
+        },
+        {
+          "id": 7, "title": "CPU (%)",
+          "type": "timeseries", "gridPos": { "x": 6, "y": 10, "w": 6, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [{ "expr": "rate(process_cpu_seconds_total{service_name=\"$service\"}[1m]) * 100", "legendFormat": "CPU", "refId": "A" }],
+          "fieldConfig": { "defaults": { "unit": "percent" } }
+        },
+        {
+          "id": 8, "title": "Heap .NET (MB)",
+          "type": "timeseries", "gridPos": { "x": 12, "y": 10, "w": 6, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [{ "expr": "dotnet_gc_heap_size_bytes{service_name=\"$service\"} / 1024 / 1024", "legendFormat": "gen{{generation}}", "refId": "A" }],
+          "fieldConfig": { "defaults": { "unit": "decmbytes" } }
+        },
+        {
+          "id": 9, "title": "GC Collections / Threads",
+          "type": "timeseries", "gridPos": { "x": 18, "y": 10, "w": 6, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "agro-prometheus" },
+          "targets": [
+            { "expr": "rate(dotnet_gc_collections_count_total{service_name=\"$service\"}[1m])", "legendFormat": "GC gen{{gc_generation}}", "refId": "A" },
+            { "expr": "dotnet_thread_pool_threads_count{service_name=\"$service\"}", "legendFormat": "Threads", "refId": "B" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "short" } }
+        },
+        {
+          "id": 10, "type": "row", "title": "Logs - $service",
+          "gridPos": { "x": 0, "y": 18, "w": 24, "h": 1 }, "collapsed": false
+        },
+        {
+          "id": 11, "title": "Logs",
+          "type": "logs", "gridPos": { "x": 0, "y": 19, "w": 24, "h": 12 },
+          "datasource": { "type": "loki", "uid": "agro-loki" },
+          "targets": [{ "expr": "{service_name=\"$service\"}", "refId": "A" }],
+          "options": { "showTime": true, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true }
+        },
+        {
+          "id": 12, "type": "row", "title": "Traces - $service",
+          "gridPos": { "x": 0, "y": 31, "w": 24, "h": 1 }, "collapsed": false
+        },
+        {
+          "id": 13, "title": "Traces",
+          "type": "traces", "gridPos": { "x": 0, "y": 32, "w": 24, "h": 10 },
+          "datasource": { "type": "jaeger", "uid": "agro-jaeger" },
+          "targets": [{ "queryType": "search", "service": "$service", "refId": "A" }]
+        }
+      ]
+    }
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-datasources
+  namespace: agrosolutions
 data:
   datasources.yaml: |
     apiVersion: 1
     datasources:
     - name: Prometheus
       type: prometheus
+      uid: agro-prometheus
       access: proxy
       url: http://prometheus:9090
       isDefault: false
       editable: true
     - name: Jaeger
       type: jaeger
+      uid: agro-jaeger
       access: proxy
       url: http://jaeger:16686
       isDefault: false

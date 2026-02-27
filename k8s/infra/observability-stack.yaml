@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
+  namespace: agrosolutions
 data:
   prometheus.yml: |
     global:
@@ -15,6 +16,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus
+  namespace: agrosolutions
 spec:
   selector:
     matchLabels:
@@ -40,18 +42,19 @@ apiVersion: v1
 kind: Service
 metadata:
   name: prometheus
+  namespace: agrosolutions
 spec:
   ports:
   - port: 9090
     targetPort: 9090
   selector:
     app: prometheus
-
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jaeger
+  namespace: agrosolutions
 spec:
   selector:
     matchLabels:
@@ -72,6 +75,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: jaeger
+  namespace: agrosolutions
 spec:
   ports:
   - name: grpc-otlp
@@ -82,12 +86,47 @@ spec:
     targetPort: 16686
   selector:
     app: jaeger
-
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki
+  namespace: agrosolutions
+spec:
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+    spec:
+      containers:
+      - name: loki
+        image: grafana/loki:2.9.4
+        args:
+        - -config.file=/etc/loki/local-config.yaml
+        ports:
+        - containerPort: 3100
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: agrosolutions
+spec:
+  ports:
+  - name: http
+    port: 3100
+    targetPort: 3100
+  selector:
+    app: loki
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: otel-collector-config
+  namespace: agrosolutions
 data:
   config.yaml: |
     receivers:
@@ -102,6 +141,11 @@ data:
         endpoint: "jaeger:4317"
         tls:
           insecure: true
+      loki:
+        endpoint: "http://loki:3100/loki/api/v1/push"
+        default_labels_enabled:
+          exporter: false
+          job: true
     service:
       pipelines:
         traces:
@@ -110,11 +154,15 @@ data:
         metrics:
           receivers: [otlp]
           exporters: [prometheus]
+        logs:
+          receivers: [otlp]
+          exporters: [loki]
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: otel-collector
+  namespace: agrosolutions
 spec:
   selector:
     matchLabels:
@@ -126,8 +174,8 @@ spec:
     spec:
       containers:
       - name: otel-collector
-        image: otel/opentelemetry-collector:0.96.0
-        command: ["/otelcol", "--config=/etc/otelcol/config.yaml"]
+        image: otel/opentelemetry-collector-contrib:0.96.0
+        command: ["/otelcol-contrib", "--config=/etc/otelcol/config.yaml"]
         volumeMounts:
         - name: config-volume
           mountPath: /etc/otelcol
@@ -140,6 +188,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: otel-collector
+  namespace: agrosolutions
 spec:
   ports:
   - name: otlp-grpc
